@@ -17,7 +17,7 @@ get '/' do
   erb :index
 end
 
-# The Products machinery:
+# ----------------------------------------- The Products machinery:
 
 # Get the index of products
 get '/products' do
@@ -116,7 +116,124 @@ def seed_products_table
 
   c = PGconn.new(:host => "localhost", :dbname => dbname)
   products.each do |p|
-    c.exec_params("INSERT INTO products (name, price, description) VALUES ($1, $2, $3);", p)
+    c.exec_params("INSERT INTO products (name, price, description, category) VALUES ($1, $2, $3, $4);", p)
   end
   c.close
 end
+
+# ----------------------------------------- The Category machinery:
+
+# Get the index of Category
+get '/categories' do
+  c = PGconn.new(:host => "localhost", :dbname => dbname)
+
+  # Get all rows from the categories table.
+  @categories = c.exec_params("SELECT * FROM categories;")
+  c.close
+  erb :categories
+end
+
+# Get the form for creating a new category
+get '/category/new' do
+  erb :new_category
+end
+
+# POST to create a new category
+post '/categories' do
+  c = PGconn.new(:host => "localhost", :dbname => dbname)
+
+  # Insert the new row into the categories table.
+  c.exec_params("INSERT INTO categories name VALUES $1",
+                  [params["name"]])
+
+  # Assuming you created your categories table with "id SERIAL PRIMARY KEY",
+  # This will get the id of the category you just created.
+  new_category_id = c.exec_params("SELECT currval('category_id_seq');").first["currval"]
+  c.close
+  redirect "/category/#{new_category_id}"
+end
+
+# Update a category
+post '/categories/:id' do
+  c = PGconn.new(:host => "localhost", :dbname => dbname)
+
+  # Update the product.
+  c.exec_params("UPDATE categories SET name = $2 WHERE categories.id = $1 ",
+                [params["id"], params["name"]])
+  c.close
+  redirect "/categories/#{params["id"]}"
+end
+
+get '/categories/:id/edit' do
+  c = PGconn.new(:host => "localhost", :dbname => dbname)
+  @category = c.exec_params("SELECT * FROM categories WHERE categories.id = $1", [params["id"]]).first
+  c.close
+  erb :edit_category
+end
+
+# DELETE to delete a category
+post '/categories/:id/destroy' do
+
+  c = PGconn.new(:host => "localhost", :dbname => dbname)
+  c.exec_params("DELETE FROM categories WHERE categories.id = $1", [params["id"]])
+  c.close
+  redirect '/categories'
+end
+
+# GET the show page for a particular category
+get '/categories/:id' do
+  c = PGconn.new(:host => "localhost", :dbname => dbname)
+  @category = c.exec_params("SELECT * FROM categories WHERE categories.id = $1;", [params[:id]]).first
+  c.close
+  erb :category
+end
+
+def create_categories_table
+  c = PGconn.new(:host => "localhost", :dbname => dbname)
+  c.exec %q{
+  CREATE TABLE categories (
+    id SERIAL PRIMARY KEY,
+    name varchar(255)
+  );
+  }
+  c.close
+end
+
+def drop_categories_table
+  c = PGconn.new(:host => "localhost", :dbname => dbname)
+  c.exec "DROP TABLE categories;"
+  c.close
+end
+
+def seed_categories_table
+  categories = [["clothes"],
+              ["transport"],
+              ["home"],
+             ]
+
+  c = PGconn.new(:host => "localhost", :dbname => dbname)
+  categories.each do |p|
+    c.exec_params("INSERT INTO categories name VALUES $1;", p)
+  end
+  c.close
+end
+
+# ----------------------------------------- The Products-copy machinery:
+
+def product_copies(product_id, category_id)
+  product_id.each do |p|
+    category_id.each do |c|
+      r = rand
+      if rand < 0.3
+
+      elsif rand < 0.8
+        @c.exec_params("INSERT INTO product_copies (product_id, category_id) VALUES ($1, $2)", [p, c])
+      else
+        rand(5).times do
+          @c.exec_params("INSERT INTO product_copies (product_id, category_id) VALUES ($1, $2)", [p, c])
+        end
+      end
+    end
+  end
+end
+
