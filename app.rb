@@ -46,6 +46,8 @@ post '/products' do
   c.exec_params("INSERT INTO products (name, price, description, categories) VALUES ($1,$2,$3, $4)",
                   [params["name"], params["price"], params["description"], params["categories"]])
 
+  #how to make these categories STICK? make them into an array of ID's. Then point each ID at a category ID
+
   new_product_id = c.exec_params("SELECT currval('products_id_seq');").first["currval"]
   c.close
   redirect "/products/#{new_product_id}"
