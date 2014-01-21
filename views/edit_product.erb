@@ -14,9 +14,14 @@
     <textarea name="description"><%= @product["description"]%></textarea>
   </p>
 
-   <p>
-    <label>Category:</label>
-    <input name="text" name ="cateogry">
+  <p>
+    The Available Categories are:
+      <%@categories.each do |category|%>
+        <div class="cat_options">[<%= category['id']%>] <%= category['name'] %></div>
+      <%end%>
+
+    <label>Categories:</label>
+    <input name="text" name ="cateogries" placeholder="[1], [5], etc...">
   </p>
 
   <p>

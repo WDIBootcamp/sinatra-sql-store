@@ -31,6 +31,10 @@ end
 
 # Get the form for creating a new product
 get '/products/new' do
+  c = PGconn.new(:host => "localhost", :dbname => dbname)
+  @categories = c.exec_params("SELECT * FROM categories")
+  c.close
+
   erb :new_product
 end
 
@@ -39,11 +43,9 @@ post '/products' do
   c = PGconn.new(:host => "localhost", :dbname => dbname)
 
   # Insert the new row into the products table.
-  c.exec_params("INSERT INTO products (name, price, description) VALUES ($1,$2,$3)",
-                  [params["name"], params["price"], params["description"]])
+  c.exec_params("INSERT INTO products (name, price, description, categories) VALUES ($1,$2,$3, $4)",
+                  [params["name"], params["price"], params["description"], params["categories"]])
 
-  # Assuming you created your products table with "id SERIAL PRIMARY KEY",
-  # This will get the id of the product you just created.
   new_product_id = c.exec_params("SELECT currval('products_id_seq');").first["currval"]
   c.close
   redirect "/products/#{new_product_id}"
@@ -63,6 +65,8 @@ end
 get '/products/:id/edit' do
   c = PGconn.new(:host => "localhost", :dbname => dbname)
   @product = c.exec_params("SELECT * FROM products WHERE products.id = $1", [params["id"]]).first
+  #grab the categories
+  @categories = c.exec_params("SELECT * FROM categories")
   c.close
   erb :edit_product
 end
@@ -219,22 +223,26 @@ def seed_categories_table
   c.close
 end
 
-# ----------------------------------------- The Products-copy machinery:
+# ----------------------------------------- The prod_cat_id machinery:
 
-def product_copies(product_id, category_id)
-  product_id.each do |p|
-    category_id.each do |c|
-      r = rand
-      if rand < 0.3
 
-      elsif rand < 0.8
-        @c.exec_params("INSERT INTO product_copies (product_id, category_id) VALUES ($1, $2)", [p, c])
-      else
-        rand(5).times do
-          @c.exec_params("INSERT INTO product_copies (product_id, category_id) VALUES ($1, $2)", [p, c])
-        end
-      end
-    end
-  end
+
+
+def create_prodcategory_table
+  c = PGconn.new(:host => "localhost", :dbname => dbname)
+  c.exec %q{
+  CREATE TABLE prod_category (
+    id SERIAL PRIMARY KEY,
+    product_id integer,
+    category_id integer
+  );
+  }
+  c.close
+end
+
+def drop_prodcategory_table
+  c = PGconn.new(:host => "localhost", :dbname => dbname)
+  c.exec "DROP TABLE prod_category;"
+  c.close
 end
 
