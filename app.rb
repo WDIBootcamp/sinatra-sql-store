@@ -143,14 +143,14 @@ post '/categories' do
   c = PGconn.new(:host => "localhost", :dbname => dbname)
 
   # Insert the new row into the categories table.
-  c.exec_params("INSERT INTO categories name VALUES $1",
-                  [params["name"]])
+
+  c.exec_params("INSERT INTO categories (name) VALUES ($1)",[params["name"]])
 
   # Assuming you created your categories table with "id SERIAL PRIMARY KEY",
   # This will get the id of the category you just created.
-  new_category_id = c.exec_params("SELECT currval('category_id_seq');").first["currval"]
+  new_category_id = c.exec_params("SELECT currval('categories_id_seq');").first["currval"]
   c.close
-  redirect "/category/#{new_category_id}"
+  redirect "/categories/#{new_category_id}"
 end
 
 # Update a category
@@ -183,6 +183,7 @@ end
 # GET the show page for a particular category
 get '/categories/:id' do
   c = PGconn.new(:host => "localhost", :dbname => dbname)
+  puts "@@@@@@@@@@@@@@@ params[:id] = #{params[:id]}"
   @category = c.exec_params("SELECT * FROM categories WHERE categories.id = $1;", [params[:id]]).first
   c.close
   erb :category
